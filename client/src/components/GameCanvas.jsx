@@ -32,8 +32,8 @@ export default function GameCanvas({ socket, gameId }) {
   const RADIUS = 12;
   const WINNING_SCORE = 50;
 
-  // Collision margin
-  const COLLISION_MARGIN = window.innerWidth < 768 ? 20 : 10;
+  // Collision margin (more generous on mobile)
+  const COLLISION_MARGIN = window.innerWidth < 768 ? 28 : 10; // increased for mobile
 
   // Derived values
   const toPx = (coord) => coord * scale;
@@ -61,27 +61,21 @@ export default function GameCanvas({ socket, gameId }) {
     }
 
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        bgMusicRef.current?.pause();
-      } else if (musicPlaying) {
-        bgMusicRef.current?.play().catch(() => {});
-      }
+      if (document.hidden) bgMusicRef.current?.pause();
+      else if (musicPlaying) bgMusicRef.current?.play().catch(() => {});
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (bgMusicRef.current) {
-        bgMusicRef.current.pause();
-        bgMusicRef.current.currentTime = 0;
-      }
+      bgMusicRef.current?.pause();
+      if (bgMusicRef.current) bgMusicRef.current.currentTime = 0;
     };
   }, [musicPlaying]);
 
   // Keyboard input
   useEffect(() => {
     if (!socket?.connected) return;
-
     const keyMap = {
       w: "up",
       a: "left",
@@ -141,13 +135,9 @@ export default function GameCanvas({ socket, gameId }) {
           ? `😁 You won with ${WINNING_SCORE} coins!`
           : `😖 ${winner} reached ${WINNING_SCORE} coins first.`;
 
-      if (winnerId === socket.id) {
-        toast.success(msg);
-        victorySound.play().catch(() => {});
-      } else {
-        toast.error(msg);
-        defeatSound.play().catch(() => {});
-      }
+      if (winnerId === socket.id)
+        toast.success(msg), victorySound.play().catch(() => {});
+      else toast.error(msg), defeatSound.play().catch(() => {});
     };
     const handleReset = () => {
       toast("🔄 Game has been reset");
@@ -190,7 +180,7 @@ export default function GameCanvas({ socket, gameId }) {
     };
   }, []);
 
-  // Coin collection
+  // Coin collection (mobile-friendly collisions)
   useEffect(() => {
     if (!socket?.connected) return;
 
@@ -227,21 +217,20 @@ export default function GameCanvas({ socket, gameId }) {
     return () => clearInterval(interval);
   }, [socket?.connected, radiusPx, COLLISION_MARGIN]);
 
-  // Mouse & touch input
+  // Mouse & touch input (prevent scroll only while dragging)
   useEffect(() => {
     if (!socket?.connected || !containerRef.current) return;
 
     const el = containerRef.current;
-    let isMouseDown = false;
+    let isDragging = false;
 
     const getCoords = (e) => {
       const rect = el.getBoundingClientRect();
-      if (e.touches && e.touches[0]) {
+      if (e.touches && e.touches[0])
         return {
           x: (e.touches[0].clientX - rect.left) / scale,
           y: (e.touches[0].clientY - rect.top) / scale,
         };
-      }
       return {
         x: (e.clientX - rect.left) / scale,
         y: (e.clientY - rect.top) / scale,
@@ -251,30 +240,30 @@ export default function GameCanvas({ socket, gameId }) {
     // Mouse handlers
     const handleMouseDown = (e) => {
       e.preventDefault();
-      isMouseDown = true;
+      isDragging = true;
       socket.emit("mouse-down", getCoords(e));
     };
     const handleMouseMove = (e) => {
       e.preventDefault();
-      if (isMouseDown) socket.emit("mouse-move", getCoords(e));
+      if (isDragging) socket.emit("mouse-move", getCoords(e));
     };
     const handleMouseUp = () => {
-      isMouseDown = false;
+      isDragging = false;
       socket.emit("mouse-up");
     };
 
     // Touch handlers
     const handleTouchStart = (e) => {
-      isMouseDown = true;
+      isDragging = true;
       socket.emit("mouse-down", getCoords(e));
     };
     const handleTouchMove = (e) => {
-      if (!isMouseDown) return; // solo bloquea scroll si el jugador está tocando el canvas
+      if (!isDragging) return;
       e.preventDefault();
       socket.emit("mouse-move", getCoords(e));
     };
     const handleTouchEnd = () => {
-      isMouseDown = false;
+      isDragging = false;
       socket.emit("mouse-up");
     };
 
@@ -287,7 +276,6 @@ export default function GameCanvas({ socket, gameId }) {
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd);
 
-    // Cleanup
     return () => {
       el.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
