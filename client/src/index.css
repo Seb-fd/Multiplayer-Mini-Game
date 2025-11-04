@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Game variables and utilities */
+:root {
+  --game-bg: #0f1724; /* slate-900 */
+  --panel-bg: rgba(255, 255, 255, 0.04);
+  --accent: #06d6a0;
+  --accent-2: #ff3366;
+}
+
+body {
+  @apply bg-gray-100 text-gray-900;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial;
+}
+
+.player-label {
+  @apply text-xs font-medium tracking-wide;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
