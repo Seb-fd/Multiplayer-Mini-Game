@@ -32,6 +32,9 @@ export default function GameCanvas({ socket, gameId }) {
   const RADIUS = 12;
   const WINNING_SCORE = 50;
 
+  // Collision margin
+  const COLLISION_MARGIN = window.innerWidth < 768 ? 20 : 10;
+
   // Derived values
   const toPx = (coord) => coord * scale;
   const radiusPx = Math.max(1, RADIUS * scale);
@@ -209,7 +212,7 @@ export default function GameCanvas({ socket, gameId }) {
       coinsRef.current.forEach((c) => {
         const dx = player.x - c.x;
         const dy = player.y - c.y;
-        if (Math.sqrt(dx * dx + dy * dy) < radiusPx + 10) {
+        if (Math.sqrt(dx * dx + dy * dy) < radiusPx + COLLISION_MARGIN) {
           socket.emit("collect", { coinId: c.id });
           setCollectedCoins((prev) => [...prev, c.id]);
           playCoinSound();
@@ -222,9 +225,9 @@ export default function GameCanvas({ socket, gameId }) {
     }, 80);
 
     return () => clearInterval(interval);
-  }, [socket?.connected, radiusPx]);
+  }, [socket?.connected, radiusPx, COLLISION_MARGIN]);
 
-  // Mouse input
+  // Mouse & touch input
   useEffect(() => {
     if (!socket?.connected || !containerRef.current) return;
 
@@ -262,13 +265,13 @@ export default function GameCanvas({ socket, gameId }) {
 
     // Touch handlers
     const handleTouchStart = (e) => {
-      e.preventDefault();
       isMouseDown = true;
       socket.emit("mouse-down", getCoords(e));
     };
     const handleTouchMove = (e) => {
+      if (!isMouseDown) return; // solo bloquea scroll si el jugador está tocando el canvas
       e.preventDefault();
-      if (isMouseDown) socket.emit("mouse-move", getCoords(e));
+      socket.emit("mouse-move", getCoords(e));
     };
     const handleTouchEnd = () => {
       isMouseDown = false;
@@ -280,7 +283,7 @@ export default function GameCanvas({ socket, gameId }) {
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
 
-    el.addEventListener("touchstart", handleTouchStart, { passive: false });
+    el.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd);
 
@@ -492,9 +495,9 @@ export default function GameCanvas({ socket, gameId }) {
           {/* Animations */}
           <style>{`
             @keyframes float { 0% { transform: translateY(0); } 100% { transform: translateY(-4px); } }
-            @keyframes pulse { 0% { transform: translate(-10px,-10px) scale(1); } 100% { transform: translate(-10px,-10px) scale(1.2); } }
-            @keyframes collect { 0% { transform: translate(-10px,-10px) scale(1); opacity: 1; } 100% { transform: translate(-10px,-10px) scale(2.5); opacity: 0; } }
-            @keyframes sparkle { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+            @keyframes pulse { 0% { transform: translate(-10px,-10px) scale(1); } 100% { transform: translate(-10px,-10px) scale(1.1); } }
+            @keyframes collect { 0% { transform: translate(-10px,-10px) scale(1); opacity:1 } 100% { transform: translate(-10px,-20px) scale(0.5); opacity:0 } }
+            @keyframes sparkle { 0% { transform: scale(1); opacity:0.8 } 100% { transform: scale(1.5); opacity:0 } }
           `}</style>
         </div>
       </div>
