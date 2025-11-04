@@ -2,6 +2,10 @@
 client/node_modules/
 server/node_modules/
 
+# Build output
+dist/
+build/
+
 # Logs
 *.log
 
@@ -12,7 +16,11 @@ package-lock.json
 client/dist/
 server/dist/
 
-
+# System files
 .vscode/
 .DS_Store
+
+# Environment variables
 .env
+.env.local
+.env.*.local
