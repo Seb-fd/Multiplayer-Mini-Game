@@ -32,7 +32,7 @@ A real-time multiplayer browser game built with **React**, **Vite**, **Socket.IO
 1. **Clone the repository**:
 
 ```bash
-git clone https://github.com/yourusername/multiplayer-mini-game.git
+git clone https://github.com/Seb-fd/multiplayer-mini-game.git
 cd multiplayer-mini-game
 ```
 
