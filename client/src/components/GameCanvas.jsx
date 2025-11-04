@@ -233,12 +233,19 @@ export default function GameCanvas({ socket, gameId }) {
 
     const getCoords = (e) => {
       const rect = el.getBoundingClientRect();
+      if (e.touches && e.touches[0]) {
+        return {
+          x: (e.touches[0].clientX - rect.left) / scale,
+          y: (e.touches[0].clientY - rect.top) / scale,
+        };
+      }
       return {
         x: (e.clientX - rect.left) / scale,
         y: (e.clientY - rect.top) / scale,
       };
     };
 
+    // Mouse handlers
     const handleMouseDown = (e) => {
       e.preventDefault();
       isMouseDown = true;
@@ -253,14 +260,39 @@ export default function GameCanvas({ socket, gameId }) {
       socket.emit("mouse-up");
     };
 
+    // Touch handlers
+    const handleTouchStart = (e) => {
+      e.preventDefault();
+      isMouseDown = true;
+      socket.emit("mouse-down", getCoords(e));
+    };
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      if (isMouseDown) socket.emit("mouse-move", getCoords(e));
+    };
+    const handleTouchEnd = () => {
+      isMouseDown = false;
+      socket.emit("mouse-up");
+    };
+
+    // Add events
     el.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
 
+    el.addEventListener("touchstart", handleTouchStart, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd);
+
+    // Cleanup
     return () => {
       el.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+
+      el.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
     };
   }, [socket?.connected, scale]);
 
