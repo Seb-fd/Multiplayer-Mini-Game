@@ -32,7 +32,7 @@ export default function useSocket(SERVER, setPlayers, setIsJoined) {
       setIsJoined(true);
       setPlayers(players || []);
       setGameId(gameId);
-      toast.success(`Joined game ${gameId}`, { id: "join-toast" });
+      toast.success(`Joined room: ${gameId}`, { id: "join-toast" });
     });
 
     // Successfully left the game room

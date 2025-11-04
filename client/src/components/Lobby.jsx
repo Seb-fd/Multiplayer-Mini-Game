@@ -17,18 +17,15 @@ export default function Lobby({
   useEffect(() => {
     if (!socket) return;
 
-    // If the server rejects joining the room (e.g., room full)
     const handleJoinError = ({ message }) => {
       setIsLoading(false);
       toast.error(message || "Cannot join the room");
     };
 
-    // If the server confirms joining
     const handleJoined = ({ gameId }) => {
       setIsJoined(true);
-      setIsLoading(false);
       setGameId(gameId);
-      toast.success(`Joined room: ${gameId}`);
+      setIsLoading(false);
     };
 
     socket.on("join-error", handleJoinError);
@@ -38,7 +35,7 @@ export default function Lobby({
       socket.off("join-error", handleJoinError);
       socket.off("joined", handleJoined);
     };
-  }, [socket, setIsJoined, setGameId]);
+  }, [socket]);
 
   const handleJoin = () => {
     if (!socket) return toast.error("Socket not connected");
