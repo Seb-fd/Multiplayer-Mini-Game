@@ -7,7 +7,9 @@ import useSocket from "./hooks/useSocket";
 import { Toaster } from "react-hot-toast";
 
 // Default server URL (can be overridden with an environment variable)
-const SERVER = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+const SERVER =
+  import.meta.env.VITE_SERVER_URL ||
+  "https://multiplayer-mini-game-g33p.onrender.com/";
 
 export default function App() {
   // Access global game store actions
