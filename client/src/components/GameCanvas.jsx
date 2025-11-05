@@ -32,9 +32,6 @@ export default function GameCanvas({ socket, gameId }) {
   const RADIUS = 12;
   const WINNING_SCORE = 50;
 
-  // Collision margin (more generous on mobile)
-  const COLLISION_MARGIN = window.innerWidth < 768 ? 28 : 10; // increased for mobile
-
   // Derived values
   const toPx = (coord) => coord * scale;
   const radiusPx = Math.max(1, RADIUS * scale);
@@ -167,7 +164,7 @@ export default function GameCanvas({ socket, gameId }) {
       const el = containerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      setScale(Math.min(rect.width / MAP_WIDTH, rect.height / MAP_HEIGHT));
+      setScale(rect.width / MAP_WIDTH);
       setContainerSize({ w: rect.width, h: rect.height });
     };
     updateSize();
@@ -200,22 +197,32 @@ export default function GameCanvas({ socket, gameId }) {
       if (!player) return;
 
       coinsRef.current.forEach((c) => {
-        const dx = player.x - c.x;
-        const dy = player.y - c.y;
-        if (Math.sqrt(dx * dx + dy * dy) < radiusPx + COLLISION_MARGIN) {
+        // Use the same clamped coordinates used for rendering
+        // This keeps collision detection consistent with what is drawn on screen
+        const coinX = Math.min(MAP_WIDTH - RADIUS, Math.max(RADIUS, c.x));
+        const coinY = Math.min(MAP_HEIGHT - RADIUS, Math.max(RADIUS, c.y));
+
+        const dx = player.x - coinX;
+        const dy = player.y - coinY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Margin in map units (not scaled pixels)
+        const margin = window.innerWidth < 768 ? 30 : 18;
+
+        if (distance < RADIUS + margin) {
           socket.emit("collect", { coinId: c.id });
           setCollectedCoins((prev) => [...prev, c.id]);
           playCoinSound();
-          setTimeout(
-            () => setCollectedCoins((prev) => prev.filter((id) => id !== c.id)),
-            400
-          );
+
+          setTimeout(() => {
+            setCollectedCoins((prev) => prev.filter((id) => id !== c.id));
+          }, 400);
         }
       });
     }, 80);
 
     return () => clearInterval(interval);
-  }, [socket?.connected, radiusPx, COLLISION_MARGIN]);
+  }, [socket?.connected]);
 
   // Mouse & touch input (prevent scroll only while dragging)
   useEffect(() => {
@@ -329,12 +336,12 @@ export default function GameCanvas({ socket, gameId }) {
       <div className="p-6 flex justify-center">
         <div
           ref={containerRef}
-          className="relative rounded-md overflow-hidden select-none"
+          className="relative rounded-md overflow-hidden select-none w-full max-w-[760px]"
           style={{
-            width: MAP_WIDTH,
-            height: MAP_HEIGHT,
+            height: `${MAP_HEIGHT * scale}px`,
             background: "linear-gradient(180deg,#0b1220,#0f1724)",
             boxShadow: "inset 0 2px 8px rgba(0,0,0,0.6)",
+            touchAction: "none",
           }}
         >
           {/* Players */}
@@ -408,45 +415,69 @@ export default function GameCanvas({ socket, gameId }) {
           {/* Coins */}
           {coins.map((c) => {
             const isCollected = collectedCoins.includes(c.id);
+
+            // Ensure they are within the original map
+            const safeX = Math.min(MAP_WIDTH - RADIUS, Math.max(RADIUS, c.x));
+            const safeY = Math.min(MAP_HEIGHT - RADIUS, Math.max(RADIUS, c.y));
+
+            // Convert coordinates to scaled pixels
+            const scaledX = safeX * scale;
+            const scaledY = safeY * scale;
+
+            const coinSize = 20 * scale;
+
+            // End clamp based on actual container size (avoids overhanging edges)
+            const clampedLeft = Math.min(
+              containerSize.w - coinSize / 2,
+              Math.max(coinSize / 2, scaledX)
+            );
+            const clampedTop = Math.min(
+              containerSize.h - coinSize / 2,
+              Math.max(coinSize / 2, scaledY)
+            );
+
             return (
               <div
                 key={c.id}
                 style={{
                   position: "absolute",
-                  left: toPx(c.x),
-                  top: toPx(c.y),
+                  left: clampedLeft,
+                  top: clampedTop,
+                  width: coinSize,
+                  height: coinSize,
+                  transform: `translate(-${coinSize / 2}px, -${
+                    coinSize / 2
+                  }px)`,
+                  zIndex: 2,
+                  pointerEvents: "none",
                 }}
               >
                 <div
                   style={{
-                    width: 20,
-                    height: 20,
+                    width: "100%",
+                    height: "100%",
                     borderRadius: "50%",
                     background:
                       "radial-gradient(circle at 30% 30%, gold, orange)",
                     boxShadow: "0 0 10px gold, 0 0 20px rgba(255,215,0,0.7)",
-                    transform: "translate(-10px,-10px)",
                     animation: isCollected
                       ? "collect 0.5s forwards ease-out"
                       : "pulse 1.2s infinite alternate",
                     filter: isCollected ? "blur(1px)" : "none",
-                    position: "relative",
-                    zIndex: 2,
                   }}
                 />
                 {isCollected && (
                   <div
                     style={{
                       position: "absolute",
-                      left: "-5px",
-                      top: "-5px",
-                      width: 30,
-                      height: 30,
+                      left: "-25%",
+                      top: "-25%",
+                      width: "150%",
+                      height: "150%",
                       borderRadius: "50%",
                       background:
                         "radial-gradient(circle, rgba(255,255,200,0.8), rgba(255,255,200,0) 70%)",
                       animation: "sparkle 0.4s forwards ease-out",
-                      zIndex: 1,
                     }}
                   />
                 )}
