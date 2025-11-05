@@ -31,13 +31,13 @@ export default function App() {
       <Toaster position="top-right" />
 
       {/* Header section with connection status */}
-      <header className="max-w-5xl mx-auto mb-6">
-        <div className="flex items-center justify-between">
+      <header className="max-w-5xl mx-auto mb-6 px-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl md:text-3xl font-extrabold">
             Multiplayer Mini Game
           </h1>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Connection indicator */}
             <div
               className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -50,8 +50,8 @@ export default function App() {
             </div>
 
             {/* Server info */}
-            <div className="text-sm text-gray-600">
-              Server: <span className="font-mono">{SERVER}</span>
+            <div className="text-sm text-gray-600 max-w-full">
+              Server: <span className="font-mono break-all">{SERVER}</span>
             </div>
           </div>
         </div>
